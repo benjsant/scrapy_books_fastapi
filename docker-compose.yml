@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: docker.io/library/postgres:15
+    container_name: books_db_container
+    restart: always
+    environment:
+      POSTGRES_USER: books_user
+      POSTGRES_PASSWORD: books_password
+      POSTGRES_DB: books_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      # 👉 Si tu veux exécuter des scripts d'init, décommente la ligne ci-dessous
+      # - ./init-scripts:/docker-entrypoint-initdb.d
+
+volumes:
+  pg_data:
