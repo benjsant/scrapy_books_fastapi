@@ -4,23 +4,17 @@ from typing import Optional
 class CategorySchema(BaseModel):
     id: int
     name: str
-
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 class ProductTypeSchema(BaseModel):
     id: int
     type_name: str
-
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 class TaxSchema(BaseModel):
     id: int
     amount: float
-
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 class BookSchema(BaseModel):
     id: int
@@ -36,9 +30,7 @@ class BookSchema(BaseModel):
     category: CategorySchema
     product_type: ProductTypeSchema
     tax: TaxSchema
-
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 class BookCreateSchema(BaseModel):
     title: str
