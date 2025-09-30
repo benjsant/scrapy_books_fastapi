@@ -1,39 +1,69 @@
 import subprocess
 import sys
-import time
 from pathlib import Path
-from dotenv import load_dotenv
+from db.database import init_db, wait_for_postgres
+from config.settings import settings
 
-# Charger le .env depuis backend/
+# -----------------------------
+# Project paths
+# -----------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent
-BACKEND_DIR = PROJECT_ROOT / "backend"
-SCRAPY_DIR = BACKEND_DIR / "scrapy_books"
+SCRAPY_DIR = PROJECT_ROOT / "scrapy_books"
 DOCKER_COMPOSE_FILE = PROJECT_ROOT / "docker-compose.yml"
+BACKEND_DIR = PROJECT_ROOT / "api"
 
-load_dotenv(BACKEND_DIR / ".env")
+# -----------------------------
+# Optional: Load secrets from Azure Key Vault
+# -----------------------------
+# Uncomment the line below to load secrets from Key Vault
+# settings.load_from_key_vault()
 
-# 1️⃣ Lancer PostgreSQL via Docker Compose
-print("[INFO] Starting PostgreSQL container via Docker Compose...")
-subprocess.run(["docker-compose", "-f", str(DOCKER_COMPOSE_FILE), "up", "-d"], check=True)
+# -----------------------------
+# Start PostgreSQL via Docker if enabled
+# -----------------------------
+if settings.docker_on:
+    print("[INFO] Starting PostgreSQL container via Docker Compose...")
+    subprocess.run(
+        ["docker-compose", "-f", str(DOCKER_COMPOSE_FILE), "up", "-d"],
+        check=True
+    )
 
-# Attente que PostgreSQL soit prêt
-print("[INFO] Waiting for PostgreSQL to start...")
-time.sleep(10)  # TODO: améliorer avec un vrai check
+# -----------------------------
+# Wait for PostgreSQL to be ready
+# -----------------------------
+print("[INFO] Waiting for PostgreSQL to be ready...")
+wait_for_postgres()
 
-# 2️⃣ Initialiser la base de données
+# -----------------------------
+# Initialize database
+# -----------------------------
 print("[INFO] Initializing database...")
-subprocess.run([sys.executable, "-m", "db.init_db"], cwd=BACKEND_DIR, check=True)
+init_db(drop_existing=False)
+print("✅ Database tables created successfully!")
 
-# 3️⃣ Lancer Scrapy crawl
-print("[INFO] Running Scrapy crawl...")
-subprocess.run(["scrapy", "crawl", "books"], cwd=SCRAPY_DIR, check=True)
+# -----------------------------
+# Run Scrapy crawl if enabled
+# -----------------------------
+if settings.run_scrapy:
+    print("[INFO] Running Scrapy crawl...")
+    subprocess.run(["scrapy", "crawl", "books"], cwd=SCRAPY_DIR, check=True)
+else:
+    print("[INFO] Skipping Scrapy crawl.")
 
-# 4️⃣ Lancer FastAPI
-print("[INFO] Starting FastAPI server...")
-subprocess.run([
-    sys.executable, "-m", "uvicorn",
-    "api.main:app",
-    "--host", "127.0.0.1",
-    "--port", "8000",
-    "--reload"
-], cwd=BACKEND_DIR)
+# -----------------------------
+# Start FastAPI server if enabled
+# -----------------------------
+if settings.run_api:
+    print("[INFO] Starting FastAPI server...")
+    subprocess.run(
+        [
+            sys.executable, "-m", "uvicorn",
+            "api.main:app",
+            "--host", "127.0.0.1",
+            "--port", "8000",
+            "--reload"
+        ],
+        cwd=PROJECT_ROOT
+    )
+else:
+    print("[INFO] Skipping FastAPI server.")
