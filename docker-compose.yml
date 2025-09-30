@@ -1,20 +1,18 @@
-version: "3.9"
-
 services:
   postgres:
     image: docker.io/library/postgres:15
-    container_name: books_db_container
+    container_name: books_db
     restart: always
+    env_file:
+     - ./backend/.env   # 👈 dit à Docker où trouver ton .env
     environment:
-      POSTGRES_USER: books_user
-      POSTGRES_PASSWORD: books_password
-      POSTGRES_DB: books_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
-      # 👉 Si tu veux exécuter des scripts d'init, décommente la ligne ci-dessous
-      # - ./init-scripts:/docker-entrypoint-initdb.d
-
+      
 volumes:
   pg_data:
