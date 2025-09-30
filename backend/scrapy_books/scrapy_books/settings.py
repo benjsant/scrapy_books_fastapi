@@ -21,7 +21,7 @@ USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Ge
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
 # Concurrency and throttling settings
-#CONCURRENT_REQUESTS = 16
+CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 4
 DOWNLOAD_DELAY = 0.8
 RANDOMIZE_DOWNLOAD_DELAY = True
@@ -61,8 +61,7 @@ RANDOMIZE_DOWNLOAD_DELAY = True
 
 ITEM_PIPELINES = {
     "scrapy_books.pipelines.clean_pipeline.CleanPipeline": 100,
-    "scrapy_books.pipelines.csv_pipeline.CSVPipeline": 200,
-    "scrapy_books.pipelines.sql_pipeline.SQLPipeline": 300,
+    "scrapy_books.pipelines.sql_pipeline.SQLPipeline": 200,
 }
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
