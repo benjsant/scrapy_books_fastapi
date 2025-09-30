@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from pathlib import Path
 import os
+from urllib.parse import quote_plus
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.core.exceptions import AzureError
@@ -81,9 +82,14 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        """Return the DATABASE_URL, preferring Key Vault values if available."""
+        """Return the DATABASE_URL, properly URL-encoded to avoid UTF-8 issues."""
         if all([self.db_user, self.db_password, self.db_host, self.db_port, self.db_name]):
-            return f"postgresql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+            user = quote_plus(self.db_user)
+            password = quote_plus(self.db_password)
+            host = self.db_host
+            port = self.db_port
+            dbname = quote_plus(self.db_name)  # safe in case db name has weird chars
+            return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
         return os.getenv(
             "DATABASE_URL",
             "postgresql://books_user:books_password@localhost:5433/books_db"
