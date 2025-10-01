@@ -1,16 +1,16 @@
 # api/routes/books_routes.py
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional, Dict, Any
-from api.schemas.book import BookSchema
+from api.schemas.book import BookSchema, BookSnapshotSchema
 from api.crud.books_crud import (
     get_all_books,
     get_books_with_category,
     get_book_by_id,
     get_table_data,
+    get_book_history,
 )
 from db.models import Book, Category, ProductType, Tax
 from api.utils.formatter import format_books
-
 router = APIRouter(prefix="/books", tags=["books"])
 
 
@@ -50,6 +50,21 @@ def get_books_formatted(
     books = get_all_books()
     return format_books(books, fields=fields, flatten=flatten)
 
+
+# -----------------------------------------
+# Book history route
+# -----------------------------------------
+@router.get("/{book_id}/history", response_model=List[BookSnapshotSchema])
+def read_book_history(book_id: int):
+    """
+    Return the historical snapshots of a book ordered by scrape date descending.
+    """
+    snapshots = get_book_history(book_id)
+    if snapshots is None or len(snapshots) == 0:
+        raise HTTPException(status_code=404, detail="No history found for this book")
+    return snapshots
+
+
 @router.get("/{book_id}", response_model=BookSchema)
 def read_book_by_id(book_id: int):
     """Return a single book by id, with all relations loaded."""
@@ -57,3 +72,4 @@ def read_book_by_id(book_id: int):
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
     return book
+

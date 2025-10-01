@@ -17,3 +17,4 @@ dotenv
 scrapy
 sqlmodel
 psycopg2-binary
+apscheduler

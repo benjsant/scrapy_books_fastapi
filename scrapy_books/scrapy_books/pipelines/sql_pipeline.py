@@ -1,26 +1,28 @@
 import sys
 from pathlib import Path
-from sqlmodel import Session, select
+from datetime import datetime
+from sqlmodel import Session, select, delete
 
-# Dynamically add project root to PYTHONPATH
+# Add project root to PYTHONPATH
 project_root = Path(__file__).resolve().parents[3]
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-from db.models import Book, Category, ProductType, Tax
+from db.models import Book, BookSnapshot, Category, ProductType, Tax
 from db.database import engine
 
 
 class SQLPipeline:
-    """Optimized pipeline to store scraped items into PostgreSQL using SQLModel."""
+    """Pipeline to store scraped books with snapshots and automatic purge of oldest snapshots."""
+
+    MAX_SNAPSHOTS_TO_KEEP = 5  # Keep latest 5 snapshots
 
     def __init__(self):
         self.seen_upcs = set()
-        self.categories_cache = {}   # name -> id
-        self.product_types_cache = {}  # type_name -> id
-        self.taxes_cache = {}   # amount -> id
+        self.categories_cache = {}
+        self.product_types_cache = {}
+        self.taxes_cache = {}
 
-        # Preload existing data in memory
         with Session(engine) as session:
             for cat in session.exec(select(Category)).all():
                 self.categories_cache[cat.name] = cat.id
@@ -36,7 +38,7 @@ class SQLPipeline:
             return item
 
         if upc in self.seen_upcs:
-            spider.logger.info(f"Duplicate book skipped (in memory): {upc}")
+            spider.logger.info(f"Duplicate UPC in current run skipped: {upc}")
             return item
 
         with Session(engine) as session:
@@ -70,28 +72,67 @@ class SQLPipeline:
                 tax_id = tax.id
                 self.taxes_cache[tax_amount] = tax_id
 
-            # --- Book ---
+            # --- Book / Snapshot ---
             existing_book = session.exec(select(Book).where(Book.upc == upc)).first()
             if existing_book:
-                spider.logger.info(f"Duplicate book skipped (DB): {upc}")
-                return item
+                # Create snapshot
+                snapshot = BookSnapshot(
+                    book_id=existing_book.id,
+                    scraped_at=datetime.utcnow(),
+                    title=existing_book.title,
+                    upc=existing_book.upc,
+                    price_excl_tax=existing_book.price_excl_tax,
+                    price_incl_tax=existing_book.price_incl_tax,
+                    availability=existing_book.availability,
+                    number_of_reviews=existing_book.number_of_reviews,
+                    rating=existing_book.rating,
+                    description=existing_book.description,
+                    image_url=existing_book.image_url,
+                )
+                session.add(snapshot)
 
-            book = Book(
-                title=item.get("title", "Unknown"),
-                upc=upc,
-                category_id=category_id,
-                product_type_id=product_type_id,
-                tax_id=tax_id,
-                price_excl_tax=item.get("price_excl_tax", 0.0),
-                price_incl_tax=item.get("price_incl_tax", 0.0),
-                availability=item.get("availability", 0),
-                number_of_reviews=item.get("number_of_reviews", 0),
-                rating=item.get("rating", 0),
-                description=item.get("description"),
-                image_url=item.get("image_url"),
-            )
-            session.add(book)
+                # Update book
+                existing_book.title = item.get("title", existing_book.title)
+                existing_book.price_excl_tax = item.get("price_excl_tax", existing_book.price_excl_tax)
+                existing_book.price_incl_tax = item.get("price_incl_tax", existing_book.price_incl_tax)
+                existing_book.availability = item.get("availability", existing_book.availability)
+                existing_book.number_of_reviews = item.get("number_of_reviews", existing_book.number_of_reviews)
+                existing_book.rating = item.get("rating", existing_book.rating)
+                existing_book.description = item.get("description", existing_book.description)
+                existing_book.image_url = item.get("image_url", existing_book.image_url)
+                existing_book.category_id = category_id
+                existing_book.product_type_id = product_type_id
+                existing_book.tax_id = tax_id
+
+                # --- Purge old snapshots ---
+                snapshots = session.exec(
+                    select(BookSnapshot)
+                    .where(BookSnapshot.book_id == existing_book.id)
+                    .order_by(BookSnapshot.scraped_at.desc())
+                ).all()
+                if len(snapshots) > self.MAX_SNAPSHOTS_TO_KEEP:
+                    to_delete = snapshots[self.MAX_SNAPSHOTS_TO_KEEP:]
+                    for s in to_delete:
+                        session.delete(s)
+
+            else:
+                # New book
+                book = Book(
+                    title=item.get("title", "Unknown"),
+                    upc=upc,
+                    category_id=category_id,
+                    product_type_id=product_type_id,
+                    tax_id=tax_id,
+                    price_excl_tax=item.get("price_excl_tax", 0.0),
+                    price_incl_tax=item.get("price_incl_tax", 0.0),
+                    availability=item.get("availability", 0),
+                    number_of_reviews=item.get("number_of_reviews", 0),
+                    rating=item.get("rating", 0),
+                    description=item.get("description"),
+                    image_url=item.get("image_url"),
+                )
+                session.add(book)
+
             session.commit()
-
-        self.seen_upcs.add(upc)
+            self.seen_upcs.add(upc)
         return item

@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     # -----------------------------
     # Methods
     # -----------------------------
+    # If I have time to use azure and postgresql 
     def load_from_key_vault(self, force_reload: bool = False) -> None:
         """Load secrets from Azure Key Vault if URL provided."""
         if not self.azure_key_vault_url:
