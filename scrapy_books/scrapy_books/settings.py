@@ -60,8 +60,7 @@ RANDOMIZE_DOWNLOAD_DELAY = True
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 
 ITEM_PIPELINES = {
-    "scrapy_books.pipelines.clean_pipeline.CleanPipeline": 100,
-    "scrapy_books.pipelines.sql_pipeline.SQLPipeline": 200,
+    "scrapy_books.pipelines.sql_pipeline.SQLPipeline": 100,
 }
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
