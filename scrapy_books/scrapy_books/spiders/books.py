@@ -31,7 +31,7 @@ class BooksSpider(scrapy.Spider):
     allowed_domains = ["books.toscrape.com"]
     # https://books.toscrape.com/catalogue/page-49.html
     # https://books.toscrape.com
-    start_urls = ["https://books.toscrape.com/catalogue/page-49.html"]
+    start_urls = ["https://books.toscrape.com"]
 
     def parse(self, response):
         """Parcourt chaque livre sur la page et suit le lien vers la page détail."""

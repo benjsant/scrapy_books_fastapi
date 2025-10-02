@@ -1,6 +1,14 @@
-from pydantic import BaseModel
-from datetime import datetime
+"""
+Pydantic schemas for Book, Category, ProductType, Tax, and BookSnapshot.
+
+These schemas ensure proper validation, serialization, and datetime formatting
+for API responses.
+"""
+
+from pydantic import BaseModel, field_serializer, Field
+from datetime import datetime, timezone
 from typing import Optional
+from ..utils.formatter import format_datetime
 
 
 class CategorySchema(BaseModel):
@@ -56,18 +64,36 @@ class BookCreateSchema(BaseModel):
     product_type_id: int
     tax_id: int
 
+
 class BookSnapshotSchema(BaseModel):
+    """
+    Schema representing a snapshot of a scraped book at a given time.
+    """
+
     id: int
     book_id: int
-    scraped_at: datetime
+    scraped_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="UTC timestamp when the book was scraped"
+    )
     title: str
-    upc: str
     price_excl_tax: float
     price_incl_tax: float
     availability: int
     number_of_reviews: int
     rating: int
-    description: Optional[str]
-    image_url: Optional[str]
 
     model_config = {"from_attributes": True}
+
+    @field_serializer("scraped_at")
+    def serialize_scraped_at(self, value: datetime) -> str:
+        """
+        Serialize scraped_at using the shared datetime formatter.
+
+        Args:
+            value (datetime): Datetime to format.
+
+        Returns:
+            str: Formatted ISO 8601 UTC datetime string.
+        """
+        return format_datetime(value)
