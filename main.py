@@ -3,19 +3,18 @@ import sys
 from pathlib import Path
 from db.database import init_db, wait_for_postgres
 from config.settings import settings
+from scrapy_books.scheduler import start_scheduler  # APScheduler
 
 # -----------------------------
 # Project paths
 # -----------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent
-SCRAPY_DIR = PROJECT_ROOT / "scrapy_books"
 DOCKER_COMPOSE_FILE = PROJECT_ROOT / "docker-compose.yml"
 BACKEND_DIR = PROJECT_ROOT / "api"
 
 # -----------------------------
 # Optional: Load secrets from Azure Key Vault
 # -----------------------------
-# Uncomment the line below to load secrets from Key Vault
 # settings.load_from_key_vault()
 
 # -----------------------------
@@ -42,11 +41,12 @@ init_db(drop_existing=False)
 print("✅ Database tables created successfully!")
 
 # -----------------------------
-# Run Scrapy crawl if enabled
+# Run Scrapy crawl via scheduler if enabled
 # -----------------------------
 if settings.run_scrapy:
-    print("[INFO] Running Scrapy crawl...")
-    subprocess.run(["scrapy", "crawl", "books"], cwd=SCRAPY_DIR, check=True)
+    print("[INFO] Starting Scrapy scheduler...")
+    # First crawl happens immediately, then scheduled every 24h
+    start_scheduler()
 else:
     print("[INFO] Skipping Scrapy crawl.")
 

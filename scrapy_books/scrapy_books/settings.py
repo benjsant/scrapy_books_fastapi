@@ -21,9 +21,9 @@ USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Ge
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
 # Concurrency and throttling settings
-CONCURRENT_REQUESTS = 16
-CONCURRENT_REQUESTS_PER_DOMAIN = 4
-DOWNLOAD_DELAY = 0.8
+CONCURRENT_REQUESTS = 32
+CONCURRENT_REQUESTS_PER_DOMAIN = 8
+DOWNLOAD_DELAY = 0.5
 RANDOMIZE_DOWNLOAD_DELAY = True
 
 # Disable cookies (enabled by default)
@@ -86,3 +86,17 @@ AUTOTHROTTLE_DEBUG = False
 
 # Set settings whose default value is deprecated to a future-proof value
 FEED_EXPORT_ENCODING = "utf-8"
+
+DOWNLOAD_TIMEOUT = 15  # Timeout pour les pages lentes
+RETRY_ENABLED = True
+RETRY_TIMES = 2  # Réessayer si échec
+RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408]
+
+# -----------------------------
+# HTTP cache settings
+# -----------------------------
+HTTPCACHE_ENABLED = True
+HTTPCACHE_EXPIRATION_SECS = 3600  # 1 heure avant de retélécharger
+HTTPCACHE_DIR = "httpcache"
+HTTPCACHE_IGNORE_HTTP_CODES = [500, 502, 503, 504]
+HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
