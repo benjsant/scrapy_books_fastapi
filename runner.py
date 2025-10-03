@@ -1,9 +1,18 @@
+"""
+Main entry point for the project.
+- Starts PostgreSQL via Docker if enabled
+- Waits for the DB to be ready
+- Initializes tables via SQLModel
+- Runs Scrapy spider via scheduler
+- Starts FastAPI server
+"""
+
 import subprocess
 import sys
 from pathlib import Path
 from db.database import init_db, wait_for_postgres
 from config.settings import settings
-from scrapy_books.scheduler import start_scheduler  # APScheduler
+from scrapy_books.scheduler import start_scheduler
 
 # -----------------------------
 # Project paths
@@ -45,7 +54,6 @@ print("✅ Database tables created successfully!")
 # -----------------------------
 if settings.run_scrapy:
     print("[INFO] Starting Scrapy scheduler...")
-    # First crawl happens immediately, then scheduled every 24h
     start_scheduler()
 else:
     print("[INFO] Skipping Scrapy crawl.")
@@ -63,7 +71,8 @@ if settings.run_api:
             "--port", "8000",
             "--reload"
         ],
-        cwd=PROJECT_ROOT
+        cwd=PROJECT_ROOT,
+        check=True
     )
 else:
     print("[INFO] Skipping FastAPI server.")
