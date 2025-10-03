@@ -1,5 +1,4 @@
 ![base](img_readme/base.png)
-
 # 📚 scrapy_books_fastapi
 
 [![Python](https://img.shields.io/badge/Python-3.13+-blue?logo=python)](https://www.python.org/)
@@ -33,7 +32,6 @@ Une plateforme de **scraping**, de **gestion** et d’**analyse** de livres comb
     - [Utilisation de l’API](#utilisation-de-lapi)
   - [Base de données](#base-de-données)
     - [Exemple de schéma de la base](#exemple-de-schéma-de-la-base)
-  - [](#)
   - [Auteurs et licence](#auteurs-et-licence)
 
 ---
@@ -46,6 +44,7 @@ Une plateforme de **scraping**, de **gestion** et d’**analyse** de livres comb
 - **Planification automatique** du scraping avec APScheduler.
 - **Nettoyage et transformation** des données via pipelines Scrapy.
 - **Analyses** statistiques sur les livres (prix, catégories, etc.).
+- **Suivi historique** avec snapshots pour les prix et ratings.
 - **Configuration centralisée** via `.env` et Azure Key Vault (optionnel).
 
 ---
@@ -82,7 +81,6 @@ python -m venv .venv
 ```sh
 source .venv/bin/activate
 ```
-
 - Windows :
 ```sh
 .venv\Scripts\activate
@@ -102,9 +100,7 @@ pip install -r requirements.txt
 ```sh
 cp .env.example .env
 ```
-
 2. Modifier les variables si besoin :
-
 - `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_HOST`, `DB_PORT`
 - `DOCKER_ON`, `RUN_SCRAPY`, `RUN_API`
 - `AZURE_KEY_VAULT_URL` (optionnel)
@@ -117,19 +113,17 @@ cp .env.example .env
 
 ### Lancer toute la plateforme
 
-Si `DOCKER_ON=True` dans `.env` et que Docker est installé, lancez simplement :
+Si `DOCKER_ON=True` dans `.env` et que Docker est installé, lancez :
 
 ```bash
 python runner.py
 ```
 
-> **⚠️ Par défaut, le scraping est planifié toutes les 15 minutes (pour les tests).  
-> Vous pouvez modifier l’intervalle dans la fonction `start_scheduler` du fichier  
-> [`scrapy_books/scheduler.py`](scrapy_books/scheduler.py) pour le passer en heures ou en jours selon vos besoins.**
-
+> **⚠️ Par défaut, le scraping est planifié toutes les 15 minutes pour les tests.**
+> Vous pouvez modifier l’intervalle dans `start_scheduler` du fichier [`scrapy_books/scheduler.py`](scrapy_books/scheduler.py) pour le passer en heures ou en jours selon vos besoins.
+> Pour désactiver le scheduler temporairement, mettez `RUN_SCRAPY=False` dans `.env`.
 
 Ce script :
-
 - Démarre PostgreSQL (si Docker activé)
 - Attend la disponibilité de la base
 - Crée les tables via SQLModel
@@ -143,7 +137,6 @@ Ce script :
 ```sh
 docker-compose up -d
 ```
-
 Sinon, assurez-vous que PostgreSQL local est lancé et que `.env` pointe sur la bonne base.
 
 ---
@@ -154,7 +147,6 @@ Sinon, assurez-vous que PostgreSQL local est lancé et que `.env` pointe sur la 
 - **Planification automatique** : [`scheduler.py`](scrapy_books/scheduler.py)
 
 Pour lancer le scraping manuellement :
-
 ```bash
 cd scrapy_books
 scrapy crawl books
@@ -177,20 +169,30 @@ L’API sera disponible sur [http://127.0.0.1:8000](http://127.0.0.1:8000)
 - **Documentation interactive** : [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - **Endpoints principaux** :
   - `/books/` : liste, filtrage, recherche de livres
-  - `/analytics/` : statistiques (prix moyen, nombre par catégorie, etc.)
-  -  `/snapshots/` : gestion et consultation des historiques de scraping
+  - `/analytics/` : statistiques (prix min/max/moyen, nombre par catégorie, etc.)
+  - `/snapshots/` : suivi historique des livres (prix, rating)
+
+> **💡 Exemple `/snapshots/book/{book_id}`** :
+> ```json
+> [
+>   {"scraped_at": "2025-10-01T12:00:00", "price_incl_tax": 12.99, "rating": 4.0},
+>   {"scraped_at": "2025-10-02T12:00:00", "price_incl_tax": 13.49, "rating": 4.5}
+> ]
+> ```
+
 ---
 
 ## Base de données
 
 - Tables créées automatiquement par SQLModel lors du lancement.
-- Pour visualiser les relations et la structure, utilisez un outil comme **DBeaver** ou **pgAdmin**.
+- Pour visualiser les relations et la structure, utilisez **DBeaver** ou **pgAdmin**.
 
-> Tables principales : `Book`, `BookSnapshot`,`Category`, etc., avec relations entre livres, catégories et historiques de scraping.
+> Tables principales : `Book`, `BookSnapshot`, `Category`, etc., avec relations entre livres, catégories et historiques de scraping.
 
 ### Exemple de schéma de la base
 
 ![schemas_bdd](img_readme/books_db.png)
+
 ---
 
 ## Auteurs et licence
