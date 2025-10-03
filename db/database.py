@@ -10,7 +10,7 @@ import time
 from sqlmodel import create_engine, SQLModel, Session
 from sqlalchemy.exc import OperationalError
 from config.settings import settings
-from db.models import Book, Category, ProductType, Tax  # your SQLModel models
+from db.models import Book, Category, ProductType, Tax  # noqa: F401 - used for table creation
 
 # --- Global engine ---
 DATABASE_URL = settings.database_url
@@ -42,12 +42,13 @@ def wait_for_postgres(timeout: int = 30, interval: float = 1.0) -> None:
             with engine.connect():
                 print("[INFO] PostgreSQL is ready!")
                 return
-        except OperationalError:
+        except OperationalError as exc:
             elapsed = time.time() - start
             if elapsed > timeout:
-                raise TimeoutError(f"PostgreSQL did not start in time ({timeout}s)")
+                raise TimeoutError(f"PostgreSQL did not start in time ({timeout}s)") from exc
             print(f"[INFO] Waiting for PostgreSQL... ({int(elapsed)}s elapsed)")
             time.sleep(interval)
+
 
 # --- Dependency for FastAPI ---
 def get_db():

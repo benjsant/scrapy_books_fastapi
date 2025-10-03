@@ -1,13 +1,18 @@
-from typing import Optional
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
-from pathlib import Path
+"""
+Application settings management using Pydantic and optional Azure Key Vault integration.
+"""
+
 import os
+from pathlib import Path
 from urllib.parse import quote_plus
+from typing import Optional
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.core.exceptions import AzureError
-
 
 def to_snake_case(name: str) -> str:
     """Convert kebab-case from Key Vault to snake_case Python variable."""
@@ -19,6 +24,13 @@ ENV_PATH = Path(__file__).resolve().parents[1] / ".env"  # ../../.env → root
 
 
 class Settings(BaseSettings):
+    """
+    Application configuration class.
+
+    Loads environment variables from `.env` file by default.
+    Can optionally fetch secrets from Azure Key Vault if a vault URL is provided.
+    Includes database configuration, Docker flags, and runtime toggles.
+    """
     # -----------------------------
     # Azure Key Vault
     # -----------------------------
@@ -53,7 +65,7 @@ class Settings(BaseSettings):
     # -----------------------------
     # Methods
     # -----------------------------
-    # If I have time to use azure and postgresql 
+    # If I have time to use azure and postgresql
     def load_from_key_vault(self, force_reload: bool = False) -> None:
         """Load secrets from Azure Key Vault if URL provided."""
         if not self.azure_key_vault_url:

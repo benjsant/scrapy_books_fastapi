@@ -1,40 +1,48 @@
+"""
+Spider for scraping books from books.toscrape.com.
+Includes data cleaning functions for price, availability, and description.
+"""
+
+import re
 import scrapy
 from scrapy.loader import ItemLoader
 from itemloaders.processors import TakeFirst, MapCompose, Join
 from scrapy_books.items import ScrapyBooksItem
-import re
 
-# --- Fonctions de nettoyage ---
+
+# --- Data cleaning functions ---
 def clean_price(value: str) -> float:
-    """Supprime le symbole £ et convertit en float."""
+    """Remove the £ symbol and convert to float."""
     try:
         return float(value.replace("£", "").strip())
     except (ValueError, AttributeError):
         return 0.0
 
+
 def clean_availability(value: str) -> int:
-    """Extrait le nombre de disponibilité à partir du texte."""
+    """Extract the number of items available from text."""
     match = re.search(r"\d+", value)
     return int(match.group()) if match else 0
 
+
 def clean_description(value: str) -> str:
-    """Nettoie la description en supprimant espaces multiples et caractères invisibles."""
+    """Clean description text: remove extra spaces and non-ASCII chars."""
     if not value:
         return None
     value = re.sub(r"\s+", " ", value).strip()
     value = re.sub(r"[^\x20-\x7E]+", "", value)
     return value
 
-# --- Spider principal ---
+
+# --- Spider ---
 class BooksSpider(scrapy.Spider):
+    """Scrapy spider for books.toscrape.com."""
     name = "books"
     allowed_domains = ["books.toscrape.com"]
-    # https://books.toscrape.com/catalogue/page-49.html
-    # https://books.toscrape.com
     start_urls = ["https://books.toscrape.com"]
 
     def parse(self, response):
-        """Parcourt chaque livre sur la page et suit le lien vers la page détail."""
+        """Parse book list page and follow links to detail pages."""
         for book in response.css("article.product_pod"):
             link = book.css("h3 a::attr(href)").get()
             if link:
@@ -46,7 +54,7 @@ class BooksSpider(scrapy.Spider):
             yield response.follow(next_page, callback=self.parse)
 
     def parse_book(self, response):
-        """Extraction détaillée d’un livre avec nettoyage via ItemLoader."""
+        """Parse book detail page and clean data using ItemLoader."""
         loader = ItemLoader(item=ScrapyBooksItem(), response=response)
         loader.default_output_processor = TakeFirst()
 
@@ -54,7 +62,7 @@ class BooksSpider(scrapy.Spider):
         upc = response.css("table.table-striped tr:nth-child(1) td::text").get()
         loader.add_value("upc", upc)
 
-        # Champs simples
+        # Simple fields
         loader.add_css("title", "h1::text")
         loader.add_css("product_type", "table.table-striped tr:nth-child(2) td::text")
         loader.add_css("price_excl_tax", "table.table-striped tr:nth-child(3) td::text", MapCompose(clean_price))
@@ -68,7 +76,7 @@ class BooksSpider(scrapy.Spider):
         rating_map = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
         loader.add_value("rating", rating_map.get(rating_class, 0))
 
-        # Catégorie
+        # Category
         breadcrumb = response.css("ul.breadcrumb li a::text").getall()
         loader.add_value("category", breadcrumb[-1].strip() if len(breadcrumb) >= 3 else "Unknown")
 
@@ -76,7 +84,7 @@ class BooksSpider(scrapy.Spider):
         desc = response.css("#product_description + p::text").getall()
         loader.add_value("description", desc, MapCompose(clean_description), Join(" "))
 
-        # Image
+        # Image URL
         image_rel = response.css("div.carousel-inner img::attr(src), div.thumbnail img::attr(src)").get()
         loader.add_value("image_url", response.urljoin(image_rel) if image_rel else None)
 

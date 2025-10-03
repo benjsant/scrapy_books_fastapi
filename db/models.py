@@ -41,7 +41,7 @@ class Tax(SQLModel, table=True):
     __tablename__ = "taxes"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    amount: float = Field(nullable=False)  # No unique constraint (several books may share the same tax)
+    amount: float = Field(nullable=False)
 
     # Relationships
     books: List["Book"] = Relationship(back_populates="tax")

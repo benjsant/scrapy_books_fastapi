@@ -1,17 +1,15 @@
 """
 Pydantic schemas for Book, Category, ProductType, Tax, and BookSnapshot.
-
-These schemas ensure proper validation, serialization, and datetime formatting
-for API responses.
 """
 
-from pydantic import BaseModel, field_serializer, Field
 from datetime import datetime, timezone
 from typing import Optional
+from pydantic import BaseModel, Field, field_serializer
 from ..utils.formatter import format_datetime
 
 
 class CategorySchema(BaseModel):
+    """Schema representing a book category."""
     id: int
     name: str
 
@@ -19,6 +17,7 @@ class CategorySchema(BaseModel):
 
 
 class ProductTypeSchema(BaseModel):
+    """Schema representing a product type."""
     id: int
     type_name: str
 
@@ -26,6 +25,7 @@ class ProductTypeSchema(BaseModel):
 
 
 class TaxSchema(BaseModel):
+    """Schema representing tax information."""
     id: int
     amount: float
 
@@ -33,6 +33,7 @@ class TaxSchema(BaseModel):
 
 
 class BookSchema(BaseModel):
+    """Schema representing a book with all related details."""
     id: int
     title: str
     upc: str
@@ -51,6 +52,7 @@ class BookSchema(BaseModel):
 
 
 class BookCreateSchema(BaseModel):
+    """Schema for creating a new book."""
     title: str
     upc: str
     price_excl_tax: float
@@ -74,7 +76,7 @@ class BookSnapshotSchema(BaseModel):
     book_id: int
     scraped_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        description="UTC timestamp when the book was scraped"
+        description="UTC timestamp when the book was scraped",
     )
     title: str
     price_excl_tax: float
@@ -87,13 +89,5 @@ class BookSnapshotSchema(BaseModel):
 
     @field_serializer("scraped_at")
     def serialize_scraped_at(self, value: datetime) -> str:
-        """
-        Serialize scraped_at using the shared datetime formatter.
-
-        Args:
-            value (datetime): Datetime to format.
-
-        Returns:
-            str: Formatted ISO 8601 UTC datetime string.
-        """
+        """Serialize scraped_at using the shared datetime formatter."""
         return format_datetime(value)

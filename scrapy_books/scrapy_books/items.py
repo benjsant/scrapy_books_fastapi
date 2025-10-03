@@ -1,11 +1,12 @@
-# Define here the models for your scraped items
-#
-# See documentation in:
-# https://docs.scrapy.org/en/latest/topics/items.html
+"""
+Define Scrapy items for the books scraper.
+"""
 
 import scrapy
 
+
 class ScrapyBooksItem(scrapy.Item):
+    """Item model representing a book."""
     title = scrapy.Field()
     upc = scrapy.Field()
     product_type = scrapy.Field()

@@ -1,11 +1,13 @@
+"""
+CRUD / Analytics operations for Book and Category.
+"""
+
 from typing import List
-from sqlmodel import Session, select, func
+from sqlmodel import Session, select
+from sqlalchemy import func
 from db.database import engine
 from db.models import Book, Category
 
-# ---------------------------
-# CRUD / Analytics functions
-# ---------------------------
 
 def get_average_book_price() -> float | None:
     """Return the average price_incl_tax of all books."""
@@ -13,10 +15,11 @@ def get_average_book_price() -> float | None:
         avg_price = session.exec(select(func.avg(Book.price_incl_tax))).one()
         return avg_price
 
+
 def get_average_price_per_category() -> List[dict]:
     """
     Return average price_incl_tax grouped by category.
-    Returns a list of dicts: {"category_name": str, "avg_price": float}.
+    Each dict contains: {"category_name": str, "avg_price": float}.
     """
     with Session(engine) as session:
         statement = (
@@ -27,10 +30,11 @@ def get_average_price_per_category() -> List[dict]:
         results = session.exec(statement).all()
         return [{"category_name": name, "avg_price": avg} for name, avg in results]
 
+
 def get_top_categories_by_book_count(limit: int = 5) -> List[dict]:
     """
     Return top N categories ordered by book count.
-    Returns a list of dicts: {"category_name": str, "book_count": int}.
+    Each dict contains: {"category_name": str, "book_count": int}.
     """
     with Session(engine) as session:
         statement = (
